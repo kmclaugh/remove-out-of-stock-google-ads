@@ -1,9 +1,20 @@
 /**
- * [Adwords Scripts] Pause out of stock products
+ * [Adwords Scripts] Pause out of stock products and 404ed pages. Unpause back in stock products
  *
  *
  * Update of https://searchengineland.com/pause-out-of-stock-products-with-this-google-ads-script-325561
  *
+ * Note1:
+ *
+ * 1) this script does not work for Dynamic Search ads. For that you need to Create exclusions for Dynamic Search Ads
+ * as documented here https://support.google.com/google-ads/answer/7185083?hl=en
+ * here's a video: https://www.loom.com/share/386e1a13f8bc4abb804ac26c754369a2
+ *
+ * 2) if you use the same google ads account for your custom (shopify) store and amazon store be sure to exclude amazon ads
+ * from this script since they have different out of stock indicators than your custom store.
+ *
+ * 3) you may get an "address unavalaible error" when running this. It's because your store times out for trying to return the
+ * given url for the ad. Just run the script again (and improve the performance of your website).
  *
  * Version: 1.1
  * maintained by SlideRuleTech
@@ -73,10 +84,8 @@ function pauseAds(ads, labelName) {
 
   while (ads.hasNext()) {
     var ad = ads.next();
-    Logger.log(ad.getId());
     var url = ad.urls().getFinalUrl();
     if (url) {
-      Logger.log("URL: " + url);
       var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
       if (response.getResponseCode() == 404) {
         isOutOfStock = 1;
@@ -85,7 +94,11 @@ function pauseAds(ads, labelName) {
         var isOutOfStock = content.search(OUT_OF_STOCK_TEXT);
       }
       if (isOutOfStock > -1) {
-        Logger.log(url + " " + "OUT OF STOCK");
+        if (response.getResponseCode() == 404) {
+          Logger.log(url + " " + "404");
+        } else {
+          Logger.log(url + " " + "OUT OF STOCK");
+        }
         ad.pause();
         ad.applyLabel(labelName.replace('"', "").replace('"', ""));
       }
